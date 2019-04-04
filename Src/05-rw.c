@@ -26,9 +26,7 @@
 #define READER4 800
 #define WRITER1 150
 
-#ifdef WINVER
-#include <windows.h>
-#else
+#ifndef WINVER
 #include <unistd.h>
 #define Sleep(x) usleep(x * 1000)
 #endif
@@ -109,7 +107,7 @@ void *reader (void *args)
 		d = data;
 		Sleep (a->delay);
 		readunlock (a->lock);
-		printf ("Reader %d : Data = %d\n", a->id, d);
+		printf ("Reader %d: Data = %d\n", a->id, d);
 		Sleep (a->delay);
 	} while (d != 0);
 	printf ("Reader %d: Finished.\n", a->id);

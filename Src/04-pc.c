@@ -22,9 +22,7 @@
 #define QUEUESIZE 2
 #define LOOP 2
 
-#ifdef WINVER
-#include <windows.h>
-#else
+#ifndef WINVER
 #include <unistd.h>
 #define Sleep(x) usleep(x * 1000)
 #endif
@@ -113,7 +111,7 @@ void *consumer (void *q)
 		pthread_mutex_unlock (fifo->mut);
 		pthread_cond_signal (fifo->notFull);
 		printf ("consumer: recieved %d.\n", d);
-		Sleep(2000);
+		Sleep (2000);
 	}
 	for (i = 0; i < LOOP; i++) {
 		pthread_mutex_lock (fifo->mut);

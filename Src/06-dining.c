@@ -19,11 +19,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef WINVER
-#include <windows.h>
-#else
+#ifdef _MSC_VER
+#pragma warning(disable: 4312)
+#endif
+
+#ifndef WINVER
 #include <unistd.h>
 #define Sleep(x) usleep(x * 1000)
+#ifndef EBUSY
+#define EBUSY 16
+#endif
 #endif
 
 #define TABLE 7
@@ -75,54 +80,54 @@ int main (int argc, char **argv)
 
 void *philosopher (void *num)
 {
-	int id;
+	long long id;
 	int i;
 	pthread_mutex_t dummy = PTHREAD_MUTEX_INITIALIZER;
 
-	id = (int)num;
+	id = (long long)num;
 	pthread_mutex_lock (&dummy);
-	printf ("P-%d sit\n", id);
+	printf ("P-%lld sit\n", id);
 	for (i = 0; i < 2; i++) {
 		fifoLock (queue, &dummy, id);
 		Sleep (DELAY);
 		fifoUnlock (queue, id);
 	}
 	for (i = 0; i < DISHES; i++) {
-                printf ("P-%d Start\n", id);
+                printf ("P-%lld Start\n", id);
 		while (1) {
-			//printf ("P-%d Start%d\n", id, i);
+			//printf ("P-%d Start%lld\n", id, i);
 			fifoLock (queue, &dummy, id);
 			if (pthread_mutex_trylock (&(forks[(id+1)%TABLE]))
 			    == EBUSY) {
-				//printf ("P-%d reqfork%d\n"
+				//printf ("P-%lld reqfork%lld\n"
 				//    , id, (id+1)%TABLE);
 				fifoUnlock (queue, id);
 				continue;
 			}
-			printf ("P-%d gotfork%d\n", id,
+			printf ("P-%lld gotfork%lld\n", id,
 			    (id+1)%TABLE);
                         Sleep(DELAY);
 			if (pthread_mutex_trylock (&(forks[id])) == EBUSY) {
-				//printf ("P-%d reqfork%d\n"
+				//printf ("P-%lld reqfork%lld\n"
 				//    , id, id);
 				pthread_mutex_unlock (&(forks[(id+1)%TABLE]));
-				printf ("P-%d dropfork%d\n"
+				printf ("P-%lld dropfork%lld\n"
 				    , id, (id+1)%TABLE);
 				fifoUnlock (queue, id);
 				continue;
 			}
-			printf ("P-%d gotfork%d\n", id, id);
-			printf ("P-%d eating\n", id);
+			printf ("P-%lld gotfork%lld\n", id, id);
+			printf ("P-%lld eating\n", id);
 			Sleep (DELAY * 3);
 			pthread_mutex_unlock (&(forks[id]));
 			pthread_mutex_unlock (&(forks[(id+1)%TABLE]));
-			printf ("P-%d retforks%d-%d\n", id, id, (id+1)%TABLE);
+			printf ("P-%lld retforks%lld-%lld\n", id, id, (id+1)%TABLE);
 			fifoUnlock (queue, id);
 			break;
 		}
-		printf ("P-%d finished\n", id);
+		printf ("P-%lld finished\n", id);
 	}
-	printf ("P-%d finishedMEAL\n", id);
+	printf ("P-%lld finishedMEAL\n", id);
 	pthread_mutex_unlock (&dummy);
 	pthread_mutex_destroy (&dummy);
 

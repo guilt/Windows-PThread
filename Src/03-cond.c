@@ -6,14 +6,14 @@ pthread_mutex_t count_mutex     = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t condition_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  condition_cond  = PTHREAD_COND_INITIALIZER;
 
-void *functionCount1();
-void *functionCount2();
+void *functionCount1(void *unused);
+void *functionCount2(void *unused);
 int  count = 0;
 #define COUNT_DONE  10
 #define COUNT_HALT1  3
 #define COUNT_HALT2  6
 
-main()
+int main()
 {
    pthread_t thread1, thread2;
 
@@ -22,10 +22,10 @@ main()
    pthread_join( thread1, NULL);
    pthread_join( thread2, NULL);
 
-   exit(0);
+   return 0;
 }
 
-void *functionCount1()
+void *functionCount1(void *unused)
 {
    for(;;)
    {
@@ -45,7 +45,7 @@ void *functionCount1()
     }
 }
 
-void *functionCount2()
+void *functionCount2(void *unused)
 {
     for(;;)
     {

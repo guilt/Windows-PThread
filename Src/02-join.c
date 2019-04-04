@@ -6,7 +6,7 @@ void *thread_function(void *);
 pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
 int  counter = 0;
 
-main()
+int main()
 {
    pthread_t thread_id[NTHREADS];
    int i, j;
@@ -26,12 +26,14 @@ main()
    /* have been completed.                                                */
 
    printf("Final counter value: %d\n", counter);
+   return 0;
 }
 
 void *thread_function(void *dummyPtr)
 {
-   printf("Thread number %lu\n", pthread_self());
+   printf("Thread number %llu\n", (unsigned long long) pthread_self());
    pthread_mutex_lock( &mutex1 );
    counter++;
    pthread_mutex_unlock( &mutex1 );
+   return NULL;
 }

@@ -37,14 +37,25 @@
  * You may want to use the MingW64 winpthreads library instead.
  * It is based on this, but adds error checking.
  */
+#ifndef _MSC_VER
+#error Use this with Microsoft Visual C++ Only.
+#endif /* _MSC_VER */
 
 /*
  * Version 1.0.1 Released 2 Feb 2012
  * Fixes pthread_barrier_destroy() to wait for threads to exit the barrier.
  */
+#ifdef _MSC_VER
 
 #ifndef WIN_PTHREADS
 #define WIN_PTHREADS
+
+/* Disable Warnings */
+#pragma warning(push)
+#pragma warning(disable : 4312)
+
+/* Wrap Standard Functions with Cancelation Points */
+#define WRAP_CANCELLATION_POINTS true
 
 #include <windows.h>
 
@@ -52,6 +63,7 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <sys/timeb.h>
+#include <time.h>
 
 #ifndef ETIMEDOUT
 #define ETIMEDOUT	110
@@ -109,7 +121,7 @@
 extern "C" {
 #endif /* _cplusplus */
 
-/* Windows Declarations */
+/* Windows Declarations that are not Included. */
 extern uintptr_t _beginthreadex(
 	void *security,
 	unsigned stack_size,
@@ -123,57 +135,47 @@ extern void _endthreadex(
 	unsigned retval
 );
 
-/* VC++ doesn't have this, so declare it ourselves. */
-#ifdef _MSC_VER
-
-struct timespec
-{
-	/* long long in Windows is the same as long in Unix for 64bit */
-	long long tv_sec;
-	long long tv_nsec;
-};
-
-/* MinGW */
-#else
-
-extern void InitializeSRWLock(
-	PSRWLOCK SRWLock
+extern void * _InterlockedCompareExchangePointer (
+   void * volatile * Destination,
+   void * Exchange,
+   void * Comparand
 );
 
-extern void AcquireSRWLockExclusive(
-	PSRWLOCK SRWLock
+extern void * _InterlockedCompareExchangePointer_acq (
+   void * volatile * Destination,
+   void * Exchange,
+   void * Comparand
 );
 
-extern void AcquireSRWLockShared(
-	PSRWLOCK SRWLock
+extern void * _InterlockedCompareExchangePointer_HLEAcquire (
+   void * volatile * Destination,
+   void * Exchange,
+   void * Comparand
 );
 
-extern void ReleaseSRWLockExclusive(
-	PSRWLOCK SRWLock
+extern void * _InterlockedCompareExchangePointer_HLERelease (
+   void * volatile * Destination,
+   void * Exchange,
+   void * Comparand
 );
 
-extern void ReleaseSRWLockShared(
-	PSRWLOCK SRWLock
+extern void * _InterlockedCompareExchangePointer_nf (
+   void * volatile * Destination,
+   void * Exchange,
+   void * Comparand
 );
 
-extern void InitializeConditionVariable(
-	PCONDITION_VARIABLE ConditionVariable
+extern void * _InterlockedCompareExchangePointer_np (
+   void * volatile * Destination,
+   void * Exchange,
+   void * Comparand
 );
 
-extern BOOL SleepConditionVariableCS(
-	PCONDITION_VARIABLE ConditionVariable,
-	PCRITICAL_SECTION   CriticalSection,
-	DWORD               dwMilliseconds
+extern long _InterlockedCompareExchangePointer_rel (
+   void * volatile * Destination,
+   void * Exchange,
+   void * Comparand
 );
-
-extern void WakeConditionVariable(
-	PCONDITION_VARIABLE ConditionVariable
-);
-
-extern void WakeAllConditionVariable(
-	PCONDITION_VARIABLE ConditionVariable
-);
-#endif /* _MSC_VER */
 
 typedef struct _pthread_cleanup _pthread_cleanup;
 struct _pthread_cleanup
@@ -209,6 +211,7 @@ struct pthread_barrier_t
 };
 
 typedef struct pthread_attr_t pthread_attr_t;
+
 struct pthread_attr_t
 {
 	unsigned p_state;
@@ -227,20 +230,21 @@ typedef int pthread_condattr_t;
 typedef CONDITION_VARIABLE pthread_cond_t;
 typedef int pthread_rwlockattr_t;
 
+/* Pthread Cancelling Variable */
 volatile long _pthread_cancelling;
 
+/* Pthread Concurrency */
 int _pthread_concur;
 
 /* Will default to zero as needed */
 pthread_once_t _pthread_tls_once;
 DWORD _pthread_tls;
 
-/* Note initializer is zero, so this works */
+/* Pthread Key */
 pthread_rwlock_t _pthread_key_lock;
 long _pthread_key_max;
 long _pthread_key_sch;
 void (**_pthread_key_dest)(void *);
-
 
 #define pthread_cleanup_push(F, A)\
 {\
@@ -249,10 +253,10 @@ void (**_pthread_key_dest)(void *);
 	pthread_self()->clean = (_pthread_cleanup *) &_pthread_cup;\
 	_ReadWriteBarrier()
 
-/* Note that if async cancelling is used, then there is a race here */
+/* Note that if Async Cancelling is used, then there is a race here. */
 #define pthread_cleanup_pop(E)\
         pthread_self()->clean = _pthread_cup.next;\
-	if(E)_pthread_cup.func(_pthread_cup.arg);\
+	if(E) _pthread_cup.func(_pthread_cup.arg);\
 };
 
 static void _pthread_once_cleanup(pthread_once_t *o)
@@ -261,6 +265,7 @@ static void _pthread_once_cleanup(pthread_once_t *o)
 }
 
 static pthread_t pthread_self(void);
+
 static int pthread_once(pthread_once_t *o, void (*func)(void))
 {
 	long state = *o;
@@ -1436,7 +1441,7 @@ static int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *a, int s)
 #define pthread_kill(T, S) 0
 #define pthread_sigmask(H, S1, S2) 0
 
-/* Wrap cancellation points */
+/* Wrap Cancellation Points. If this is true, ensure you include libraries before this Header. */
 #ifdef WRAP_CANCELLATION_POINTS
 
 #define accept(...) (pthread_testcancel(), accept(__VA_ARGS__))
@@ -1677,4 +1682,6 @@ static int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *a, int s)
 
 #endif /* WRAP_CANCELATION_POINTS */
 
+#pragma warning(pop)
 #endif /* WIN_PTHREADS */
+#endif /* _MSC_VER */
